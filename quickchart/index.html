@@ -1,44 +1,20 @@
-<!DOCTYPE html>
 <html>
     <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.2/Chart.bundle.min.js"></script> -->
+        <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
         <script src="chartjs/jquery-3.3.1.min.js"></script>
-        <script src="chartjs/moment.js"></script>
-        <script src="chartjs/Chart.bundle.min.js"></script>
-        <style type="text/css">/* Chart.js */
-            @-webkit-keyframes chartjs-render-animation{from{opacity:0.99}to{opacity:1}
-            }@keyframes chartjs-render-animation{from{opacity:0.99}to{opacity:1}}
-            .chartjs-render-monitor{
-                -webkit-animation:chartjs-render-animation 0.001s;
-                animation:chartjs-render-animation 0.001s;
-                }
-            .divChart {
-                max-width: 1000px;
-                max-height: 600px;
-            }
-        </style>
-        <script src="chartjs/Chart.Financial.js"></script>
-        <script src="chartjs/chartjs-plugin-zoom.min.js"></script>
-        <script src="chartjs/utils.js"></script>
-        <link rel="stylesheet" type="text/css" href="style.css">
     </head>
     <body>
+        <!-- Plotly chart will be drawn inside this div -->
         <label for="fStock">Stock Code : </label>
         <input type="text" id="fStock" name="fStock" placeholder="e.g BBCA.JK" value="BBCA.JK">
         <input type="button" id="btnSubmit" name="btnSubmit" value="Retrieve" onclick="loadData()">
-        <div class="divChart">
-            <canvas id="myChart" width="800px" height="500px"></canvas>
-        </div>
-        <input type="button" id="btnResetZoom" name="btnResetZoom" value="Reset Zoom" onclick="">
+        <div id="plotly-div"></div>
         <script>
-            var dateXLabel = [];
             function loadData() {
                 var stockCode = document.getElementById('fStock').value;
                 if (stockCode == '') alert('Masukan kode saham!');
-                //var hostUrl = "http://127.0.0.1:8000/"
-                var hostUrl = "https://agi-snr-api-proto.herokuapp.com/"
+                var hostUrl = "http://127.0.0.1:8000/";
+                //var hostUrl = "https://agi-snr-api-proto.herokuapp.com/";
                 var baseUrl = hostUrl + "indicator/";
                 $.ajax(baseUrl + stockCode + "/", {
                     success : drawChart,
@@ -48,234 +24,81 @@
                 })
             }
 
-            function drawChart(resp, textStatus, jqXHR) {                
-                //var cdData = getRandomData('April 01 2017', 1100);
-                var ctx = document.getElementById('myChart').getContext('2d');
-                var chart = new Chart(ctx, {
-                    //type: 'candlestick',
-                    data: {
-                        datasets: createDataSet(resp)
+            function drawChart(resp, textStatus, jqXHR) {
+                var cdData = [getCdData(resp.data)];
+                var layout = {
+                    dragmode: 'zoom',
+                    showlegend: false,
+                    margin: {
+                        r: 10, 
+                        t: 25, 
+                        b: 40, 
+                        l: 60
                     },
-                    options: {
-                        tooltips: {
-                            position: 'nearest',
-                            mode: 'index',
-                        },
-                        pan : {
-                            enabled: true,
-                            mode: 'xy',
-                            rangeMin: {
-                                x: null,
-                                y: null
+                    xaxis: {
+                        autorange: true,
+                        title: 'Date',
+                        type: 'date',
+                        rangeselector: {
+                            x: 0,
+                            y: 1.2,
+                            xanchor: 'left',
+                            font: {size: 8},
+                            buttons: [{
+                                step: 'month',
+                                stepmode: 'backward',
+                                count: 1,
+                                label: '1 month'
                             },
-                            rangeMax: {
-                                x: null,
-                                y: null
-                            }
-                        },
-                        zoom: {
-                            enabled: true,
-                            drag: true,
-                            mode: 'xy',
-                            rangeMin: {
-                                x: null,
-                                y: null
+                            {
+                                step: 'month',
+                                stepmode: 'backward',
+                                count: 6,
+                                label: '6 months'
                             },
-                            rangeMax: {
-                                x: null,
-                                y: null
-                            }
+                            {
+                                step: 'all',
+                                label: 'All dates'
+                            }]
                         }
                     },
-                });
-            }
+                    yaxis: {
+                        autorange: true,
+                    }
+                };
 
-            function createDataSet(resp){
-                var dataSet = [];
-                dateXLabel = [];
-                // Dataset for candlestick
-                // dataSet.push({
-                //             label: "Simulasi Support Resistance",
-                //             data: getCdData(resp.data),
-                //             fractionalDigitsCount: 5,
-                //         });
-                
-                // Create zone
-                $.each(resp.zone, function(key, value){
-                    var zones = createZone(value);
-                    zones.forEach(function(z){
-                        dataSet.push(z);
-                    });
-                });
-
-                return dataSet;
-            }
-
-            function getCdObj(date, cd){
-                var obj = {};
-                obj.o = cd.open;
-                obj.h = cd.high;
-                obj.l = cd.low;
-                obj.c = cd.close;
-                var t = moment(date).valueOf();
-                obj.t = t;
-                // Don't forget to push label for reference later
-                dateXLabel.push(t);
-                return obj;
+                Plotly.plot('plotly-div', cdData, layout);
             }
 
             function getCdData(data){
-                var cdData = [];
+                var x = [];
+                var close = [];
+                var high = [];
+                var low = [];
+                var open = [];
+
                 $.each(data, function(key, value){
-                    cdData.push(getCdObj(key, value));
+                    x.push(key);
+                    close.push(value.close);
+                    high.push(value.high);
+                    low.push(value.low);
+                    open.push(value.open);
                 });
-                return cdData;
-            }
-
-            function generateZoneData(value, dtStart){
-                var v = [];
-                var t = moment(dtStart).valueOf();
-                dateXLabel.forEach(function(dt){
-                    if (dt < t)
-                    {
-                        //v.push(null);
-                        v.push(value);
-                    } else {
-                        v.push(value);
-                    }
-                });
-                return v;
-            }
-
-            function createZoneColor(type, strength){
-                //https://www.rapidtables.com/web/color/
-                var color;
-                if (type == 1){
-                    switch (strength) {
-                        case 0:
-                            //Support Weak : DarkSlateGray
-                            color = 'rgba(47,79,79,0.4)';
-                            break;
-                        case 1:
-                            //Support Turncoat : OliveDrab
-                            color = 'rgba(107,142,35,0.4)';
-                            break;
-                        case 2:
-                            //Support Untested : SeaGreen
-                            color = 'rgba(46,139,87,0.4)';
-                            break;
-                        case 3:
-                            //Support Verified : Green
-                            color = 'rgba(0,128,0,0.4)';
-                            break;
-                        case 4:
-                            //Support Proven : LimeGreen
-                            color = 'rgba(50,205,50,0.4)';
-                            break;
-                        default:
-                            break;
-                    }
-                } else {
-                    switch(strength) {
-                        case 0:
-                            //Resist Weak : Indigo
-                            color = 'rgba(75,0,130,0.4)';
-                            break;
-                        case 1:
-                            //Resist Turncoat : DarkOrange
-                            color = 'rgba(255,140,0,0.4)';
-                            break;
-                        case 2:
-                            //Resist Untested : Orchid
-                            color = 'rgba(218,112,214,0.4)';
-                            break;
-                        case 3:
-                            //Resist Verified : Crimson
-                            color = 'rgba(220,20,60,0.4)';
-                            break;
-                        case 4:
-                            //Resist Proven : Red
-                            color = 'rgba(255,0,0,0.4)';
-                            break;
-                        default:
-                            break;
-                    }
-                }
-                return color;
-            }
-
-            function createZoneLabel(type, strength){
-                var label = '';
-                if (type == 1){
-                    switch (strength) {
-                        case 0:
-                            label = 'Weak Support';
-                            break;
-                        case 1:
-                            label = 'Turncoat Support';
-                            break;
-                        case 2:
-                            label = 'Untested Support';
-                            break;
-                        case 3:
-                            label = 'Verified Support';
-                            break;
-                        case 4:
-                            label = 'Proven Support';
-                            break;
-                        default:
-                            break;
-                    }
-                } else {
-                    switch(strength) {
-                        case 0:
-                            label = 'Weak Resistance';
-                            break;
-                        case 1:
-                            label = 'Turncoat Resistance';
-                            break;
-                        case 2:
-                            label = 'Untested Resistance';
-                            break;
-                        case 3:
-                            label = 'Verified Resistance';
-                            break;
-                        case 4:
-                            label = 'Proven Resistance';
-                            break;
-                        default:
-                            break;
-                    }
-                }
-                return label;
-            }
-
-            function createZone(data){
-                var zones = [];
-                // Create the high
-                var high = {};
-                high.backgroundColor = createZoneColor(data.zoneType, data.strength);
-                high.borderColor = createZoneColor(data.zoneType, data.strength);
-                high.fill = '+1';
-                high.label = createZoneLabel(data.zoneType, data.strength);
-                //high.data = generateZoneData(data.hi, data.start);
-                high.data = generateZoneData(23500, data.start);
-                high.type = 'line';
-                zones.push(high);
-
-                // Create the low
-                var low = {}
-                low.backgroundColor = createZoneColor(data.zoneType, data.strength);
-                low.borderColor = createZoneColor(data.zoneType, data.strength);
-                low.fill = '-1';
-                low.label = createZoneLabel(data.zoneType, data.strength);
-                //low.data = generateZoneData(data.low, data.start);
-                low.data = generateZoneData(23000, data.start);
-                low.type = 'line';
-                zones.push(low);
-
-                return zones;
+                return {
+                    x: x,
+                    close: close,
+                    high: high,
+                    low: low,
+                    open: open,
+                    increasing: {line: {color: 'green'}},
+                    decreasing: {line: {color: 'red'}},
+                    type: 'candlestick',
+                    xaxis: 'x',
+                    yaxis: 'y'
+                };
             }
         </script>
     </body>
 </html>
+    
+    
