@@ -2,6 +2,7 @@
     <head>
         <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
         <script src="chartjs/jquery-3.3.1.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/gasparesganga-jquery-loading-overlay@2.1.5/dist/loadingoverlay.min.js"></script>
     </head>
     <body>
         <!-- Plotly chart will be drawn inside this div -->
@@ -17,18 +18,21 @@
                     alert('Masukan kode saham!');
                     return false;
                 };
+                $.LoadingOverlay("show")
                 //var hostUrl = "http://127.0.0.1:8000/";
                 var hostUrl = "https://agi-snr-api-proto.herokuapp.com/";
                 var baseUrl = hostUrl + "indicator/";
                 $.ajax(baseUrl + stockCode + "/", {
                     success : drawChart,
                     error : function(jqXHR, textStatus, errorThrown) {
+                        $.LoadingOverlay("hide");
                         alert("Error! " + textStatus + " : " + errorThrown);
                     }
                 })
             }
 
             function drawChart(resp, textStatus, jqXHR) {
+                $.LoadingOverlay("hide");
                 document.getElementById("plotly-div").innerHTML = "";
                 var cdData = [getCdData(resp.data)];
                 var zoneData = getZonesData(resp.zone);
