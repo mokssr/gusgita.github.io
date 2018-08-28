@@ -1,9 +1,271 @@
-<!DOCTYPE html>
 <html>
+    <head>
+        <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+        <script src="chartjs/jquery-3.3.1.min.js"></script>
+    </head>
+    <body>
+        <!-- Plotly chart will be drawn inside this div -->
+        <label for="fStock">Stock Code : </label>
+        <input type="text" id="fStock" name="fStock" placeholder="e.g BBCA.JK">
+        <input type="button" id="btnSubmit" name="btnSubmit" value="Retrieve" onclick="loadData()">
+        <div id="plotly-div"></div>
+        <script>
+            var latestXdata;
+            function loadData() {
+                var stockCode = document.getElementById('fStock').value;
+                if (stockCode == '') {
+                    alert('Masukan kode saham!');
+                    return false;
+                };
+                //var hostUrl = "http://127.0.0.1:8000/";
+                var hostUrl = "https://agi-snr-api-proto.herokuapp.com/";
+                var baseUrl = hostUrl + "indicator/";
+                $.ajax(baseUrl + stockCode + "/", {
+                    success : drawChart,
+                    error : function(jqXHR, textStatus, errorThrown) {
+                        alert("Error! " + textStatus + " : " + errorThrown);
+                    }
+                })
+            }
 
-<body>
-  <h1>UNDER CONSTRUCTION</h1>
-  <p>Sorry for this.. But, thanks for having a visit!</p>
-</body>
+            function drawChart(resp, textStatus, jqXHR) {
+                document.getElementById("plotly-div").innerHTML = "";
+                var cdData = [getCdData(resp.data)];
+                var zoneData = getZonesData(resp.zone);
+                var zoneLabels = getZoneLabels(resp.zone);
+                var layout = {
+                    dragmode: 'pan',
+                    showlegend: false,
+                    margin: {
+                        r: 10, 
+                        t: 25, 
+                        b: 40, 
+                        l: 60
+                    },
+                    height: 550,
+                    xaxis: {
+                        autorange: true,
+                        title: 'Date',
+                        type: 'date',
+                        rangeselector: {
+                            x: 0,
+                            y: 1.2,
+                            xanchor: 'left',
+                            font: {size: 10},
+                            buttons: [{
+                                step: 'month',
+                                stepmode: 'backward',
+                                count: 1,
+                                label: '1 month'
+                            },
+                            {
+                                step: 'month',
+                                stepmode: 'backward',
+                                count: 6,
+                                label: '6 months'
+                            },
+                            {
+                                step: 'all',
+                                label: 'All dates'
+                            }]
+                        }
+                    },
+                    yaxis: {
+                        autorange: true,
+                        title: 'Price',
+                        type: 'linear',
+                        fixedrange: false,
+                    },
+                    shapes : zoneData,
+                    annotations: zoneLabels
+                };
 
+                Plotly.newPlot('plotly-div', cdData, layout, {scrollZoom: true});
+            }
+
+            function getCdData(data){
+                var x = [];
+                var close = [];
+                var high = [];
+                var low = [];
+                var open = [];
+
+                $.each(data, function(key, value){
+                    x.push(key);
+                    close.push(value.close);
+                    high.push(value.high);
+                    low.push(value.low);
+                    open.push(value.open);
+                });
+                latestXdata = x[x.length-1];
+                return {
+                    x: x,
+                    close: close,
+                    high: high,
+                    low: low,
+                    open: open,
+                    increasing: {line: {color: 'green'}},
+                    decreasing: {line: {color: 'red'}},
+                    type: 'candlestick',
+                    xaxis: 'x',
+                    yaxis: 'y'
+                };
+            }
+
+            function getZonesData(zoneObjs){
+                var zones = [];
+                $.each(zoneObjs, function(key, value){
+                    var zone = {
+                        type: 'rect',
+                        xref: 'x',
+                        yref: 'y',
+                        x0: value.start,
+                        y0: value.low,
+                        x1: latestXdata,
+                        y1: value.hi,
+                        fillcolor: createZoneColor(value),
+                        line: {
+                            width: 0
+                        }
+                    };
+                    zones.push(zone);
+                });
+                return zones;
+            }
+
+            function getZoneLabels(zoneObjs){
+                var labels = [];
+                $.each(zoneObjs, function(key, value){
+                    var label = {
+                        text: createZoneLabel(value),
+                        font: {
+                            size: 8
+                        },
+                        align: 'left',
+                        showarrow: false,
+                        x: latestXdata,
+                        y: ((value.hi + value.low) / 2),
+                        xref : 'x',
+                        yref : 'y',
+                        xanchor: 'left',
+                        xshift: 5,
+                        yshift: 0,
+                        hovertext : 'high : ' + value.hi.toFixed(4) + ', low : ' + value.low.toFixed(4)
+                    };
+                    labels.push(label);
+                });
+                return labels;
+            }
+
+            function createZoneColor(value){
+                //https://www.rapidtables.com/web/color/
+                var color;
+                if (value.zoneType == 1){
+                    switch (value.strength) {
+                        case 0:
+                            //Support Weak : DarkSlateGray
+                            color = 'rgba(47,79,79,0.4)';
+                            break;
+                        case 1:
+                            //Support Turncoat : OliveDrab
+                            color = 'rgba(107,142,35,0.4)';
+                            break;
+                        case 2:
+                            //Support Untested : SeaGreen
+                            color = 'rgba(46,139,87,0.4)';
+                            break;
+                        case 3:
+                            //Support Verified : Green
+                            color = 'rgba(0,128,0,0.4)';
+                            break;
+                        case 4:
+                            //Support Proven : LimeGreen
+                            color = 'rgba(50,205,50,0.4)';
+                            break;
+                        default:
+                            break;
+                    }
+                } else {
+                    switch(value.strength) {
+                        case 0:
+                            //Resist Weak : Indigo
+                            color = 'rgba(75,0,130,0.4)';
+                            break;
+                        case 1:
+                            //Resist Turncoat : DarkOrange
+                            color = 'rgba(255,140,0,0.4)';
+                            break;
+                        case 2:
+                            //Resist Untested : Orchid
+                            color = 'rgba(218,112,214,0.4)';
+                            break;
+                        case 3:
+                            //Resist Verified : Crimson
+                            color = 'rgba(220,20,60,0.4)';
+                            break;
+                        case 4:
+                            //Resist Proven : Red
+                            color = 'rgba(255,0,0,0.4)';
+                            break;
+                        default:
+                            break;
+                    }
+                }
+                return color;
+            }
+
+            function createZoneLabel(value){
+                var label = '';
+                if (value.zoneType == 1){
+                    switch (value.strength) {
+                        case 0:
+                            label = 'Weak Support';
+                            break;
+                        case 1:
+                            label = 'Turncoat Support';
+                            break;
+                        case 2:
+                            label = 'Untested Support';
+                            break;
+                        case 3:
+                            label = 'Verified Support';
+                            break;
+                        case 4:
+                            label = 'Proven Support';
+                            break;
+                        default:
+                            break;
+                    }
+                } else {
+                    switch(value.strength) {
+                        case 0:
+                            label = 'Weak Resistance';
+                            break;
+                        case 1:
+                            label = 'Turncoat Resistance';
+                            break;
+                        case 2:
+                            label = 'Untested Resistance';
+                            break;
+                        case 3:
+                            label = 'Verified Resistance';
+                            break;
+                        case 4:
+                            label = 'Proven Resistance';
+                            break;
+                        default:
+                            break;
+                    }
+                }
+                label += ' ('+ value.start +') : ';
+                label += 'high ' + value.hi.toFixed(4) +', ';
+                label += 'low ' + value.low.toFixed(4);
+                if (value.hits > 0 && value.strength > 2)
+                    label += ', retests=' + value.hits.toString();
+                return label;
+            }
+        </script>
+    </body>
 </html>
+    
+    
