@@ -37,7 +37,8 @@
             function loadData() {
                 var stockCode = document.getElementById('fStock').value;
                 if (stockCode == '') alert('Masukan kode saham!');
-                var hostUrl = "http://127.0.0.1:8000/"
+                //var hostUrl = "http://127.0.0.1:8000/"
+                var hostUrl = "https://agi-snr-api-proto.herokuapp.com/"
                 var baseUrl = hostUrl + "indicator/";
                 $.ajax(baseUrl + stockCode + "/", {
                     success : drawChart,
