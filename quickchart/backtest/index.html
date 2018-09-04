@@ -91,7 +91,7 @@
                 var ws_scheme = window.location.protocol == "https:" ? "wss" : "ws";
                 var hostUrl = "agi-snr-api-proto.herokuapp.com";
                 var baseUrl = hostUrl + "/indicator/backtest/";
-                //var webSocketUrl = ws_scheme + '://' + baseUrl;
+                var webSocketUrl = ws_scheme + '://' + baseUrl;
                 //var webSocketUrl = 'ws://127.0.0.1:8000/indicator/backtest/';
                 wSocket = new WebSocket(webSocketUrl); //new ReconnectingWebSocket(webSocketUrl);
                 wSocket.onopen = socketOpen;
