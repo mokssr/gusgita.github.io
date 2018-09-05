@@ -11,7 +11,7 @@
     </head>
     <body>
         <!-- Plotly chart will be drawn inside this div -->
-        <label for="fStock">Stock Code : </label><input type="text" id="fStock" name="fStock" placeholder="e.g BBCA.JK" required value="BBCA.JK"><br>
+        <label for="fStock">Stock Code : </label><input type="text" id="fStock" name="fStock" placeholder="e.g BBCA.JK" required><br>
         <label for="ddTimeFrame">Time Frame : </label>
         <select name="ddTimeFrame" id="ddTimeFrame">
             <option value="1min">1 Menit</option>
@@ -50,7 +50,7 @@
 
             function socketOpen(event){
                 alert("Koneksi dengan server berhasil!");
-                //$.LoadingOverlay("show");
+                $.LoadingOverlay("show");
                 var message = {
                     type: "start",
                     symbol: document.getElementById('fStock').value,
@@ -74,10 +74,12 @@
             }
 
             function socketClose(event){
+                $.LoadingOverlay("hide");
                 alert('Koneksi terputus!');
             }
 
             function socketError(event){
+                $.LoadingOverlay("hide");
                 alert("Koneksi error : " + event);
                 console.error(event);
             }
@@ -154,6 +156,7 @@
                     annotations: zoneLabels
                 };
                 if (firstLoad) {
+                    $.LoadingOverlay("hide");
                     Plotly.newPlot('plotly-div', cdData, layout, {scrollZoom: true});
                     firstLoad = false;
                 } else {
