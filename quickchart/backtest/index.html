@@ -24,10 +24,10 @@
         </select><br>
         <label for="fStartDate">Start : </label><input type="date" name="fStartDate" id="fStartDate" required value="2018-08-01">&nbsp;
         <label for="fEndDate">End : </label><input type="date" name="fEndDate" id="fEndDate" required value="2018-08-31"><br>
-        <span>Parameter Opsional :</span><br>
+        <!-- <span>Parameter Opsional :</span><br>
         <label for="fLimit">Back limit : </label><input type="text" name="fLimit" id="fLimit" value="1000"><br>
         <label for="fFastFactor">Fractal Fast Factor : </label><input type="text" name="fFastFactor" id="fFastFactor" value="3.0"><br>
-        <label for="fSlowFactor">Fractal Slow Factor : </label><input type="text" name="fSlowFactor" id="fSlowFactor" value="6.0"><br>
+        <label for="fSlowFactor">Fractal Slow Factor : </label><input type="text" name="fSlowFactor" id="fSlowFactor" value="6.0"><br> -->
         <input type="button" id="btnSubmit" name="btnSubmit" value="Retrieve" onclick="loadData();">
         <input type="button" id="btnStop" value="Stop" onClick="terminate();">
         <div id="plotly-div"></div>
@@ -57,11 +57,11 @@
                     timeFrame: document.getElementById('ddTimeFrame').value,
                     startDate: document.getElementById('fStartDate').value,
                     endDate: document.getElementById('fEndDate').value,
-                    opts: {
-                        back_limit: parseInt(document.getElementById('fLimit').value),
-                        fractal_fast_factor: parseFloat(document.getElementById('fFastFactor').value),
-                        fractal_slow_factor: parseFloat(document.getElementById('fSlowFactor').value)
-                    }
+                    // opts: {
+                    //     back_limit: parseInt(document.getElementById('fLimit').value),
+                    //     fractal_fast_factor: parseFloat(document.getElementById('fFastFactor').value),
+                    //     fractal_slow_factor: parseFloat(document.getElementById('fSlowFactor').value)
+                    // }
                 };
                 wSocket.send(JSON.stringify(message));
             }
