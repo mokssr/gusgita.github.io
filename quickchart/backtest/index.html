@@ -50,7 +50,6 @@
 
             function socketOpen(event){
                 alert("Koneksi dengan server berhasil!");
-                $.LoadingOverlay("show");
                 var message = {
                     type: "start",
                     symbol: document.getElementById('fStock').value,
@@ -90,6 +89,7 @@
                     alert('Masukan kode saham!');
                     return false;
                 };
+                $.LoadingOverlay("show");
                 var ws_scheme = window.location.protocol == "https:" ? "wss" : "ws";
                 var hostUrl = "agi-snr-api-proto.herokuapp.com";
                 var baseUrl = hostUrl + "/indicator/backtest/";
