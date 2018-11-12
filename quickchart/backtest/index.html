@@ -111,6 +111,12 @@
                         showAlert(msg.data);
                         break;
                     case "finished":
+                        document.getElementById("chkAggresive").removeAttribute('disabled');
+                        document.getElementById('btnPause').setAttribute('hidden','hidden');
+                        document.getElementById('btnContinue').setAttribute('hidden','hidden');
+                        alert("Backtest selesai.");
+                        wSocket.close();
+                        break;
                     case "stopOk":
                         wSocket.close();
                         document.getElementById("chkAggresive").removeAttribute('disabled');
