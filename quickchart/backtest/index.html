@@ -180,6 +180,7 @@
                     if (signal.hasOwnProperty('stop_loss')) {
                         alertEl += ", Stop Loss : " + signal.stop_loss;
                     }
+                    alertEl += ", on date " + latestXdata;
                     alertEl += "<button type='button' class='close' data-dismiss='alert' aria-label='Close'>";
                     alertEl += "<span aria-hidden='true'>&times;</span></button></div>";
                     $("#alert-div").html(alertEl);
