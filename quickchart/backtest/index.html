@@ -12,23 +12,35 @@
         <script src="../chartjs/reconnecting-websocket.min.js"></script>
         <script src="../chartjs/moment.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/gasparesganga-jquery-loading-overlay@2.1.5/dist/loadingoverlay.min.js"></script>
+        <script>
+            var ddTimeFrameItems = {
+                "alphaVantage" : "30min|30 Menit|selected,60min|1 jam,daily|Harian",
+                "direct" : "30min|30 Menit|selected,60min|1 jam"
+            }
+        </script>
     </head>
     <body>
         <!-- Plotly chart will be drawn inside this div -->
         <label for="fStock">Stock Code : </label><input type="text" id="fStock" name="fStock" placeholder="e.g BBCA" required value="BBCA"><br>
+        <label for="ddDataSource">Data Source: </label>
+        <select name="ddDataSource" id="ddDataSource">
+            <option value="1" selected="selected">Alpha Vantage</option>
+            <option value="2">Direct</option>
+        </select><br>
         <label for="ddTimeFrame">Time Frame : </label>
-        <select name="ddTimeFrame" id="ddTimeFrame" disabled="disabled">
-            <option value="1min">1 Menit</option>
+        <select name="ddTimeFrame" id="ddTimeFrame">
+            <!-- <option value="1min">1 Menit</option>
             <option value="5min">5 Menit</option>
-            <option value="15min">15 Menit</option>
+            <option value="15min">15 Menit</option> -->
+            <option value="30min" selected="selected">30 Menit</option>
             <option value="60min">1 Jam</option>
-            <option value="daily" selected="selected">Harian</option>
-            <option value="weekly">Mingguan</option>
-            <option value="monthly">Bulanan</option>
+            <option value="daily">Harian</option>
+            <!-- <option value="weekly">Mingguan</option>
+            <option value="monthly">Bulanan</option> -->
         </select><br>
         <label for="fStartDate">Start : </label><input type="date" name="fStartDate" id="fStartDate" required value="2018-08-01">&nbsp;
         <label for="fEndDate">End : </label><input type="date" name="fEndDate" id="fEndDate" required value="2018-08-31"><br>
-        <input type="checkbox" id="chkAggresive" name="chkAggresive" value="Aggresive Mode"> Aggresive Mode<br>
+        <!-- <input type="checkbox" id="chkAggresive" name="chkAggresive" value="Aggresive Mode"> Aggresive Mode<br> -->
         <!--<span>Parameter Opsional :</span><br>
         <label for="fLimit">Back limit : </label><input type="text" name="fLimit" id="fLimit" value="1000"><br>
         <label for="fFastFactor">Fractal Fast Factor : </label><input type="text" name="fFastFactor" id="fFastFactor" value="3.0"><br>
@@ -51,6 +63,33 @@
             $(document).ready(function(){
                 document.getElementById("fStartDate").setAttribute('max', moment().format(moment().format(moment.HTML5_FMT.DATE)));
                 document.getElementById("fEndDate").setAttribute('max', moment().format(moment().format(moment.HTML5_FMT.DATE)));
+            });
+
+            $("#ddDataSource").change(function(){
+                var $ddDatasource = $(this);
+                var key = $ddDatasource.val();
+                vals = [];
+                switch (key) {
+                    case "1":
+                        vals = ddTimeFrameItems.alphaVantage.split(",");
+                        break;
+                    case "2":
+                        vals = ddTimeFrameItems.direct.split(",");
+                    default:   
+                        break;
+                }
+
+                var $ddTimeframe = $("#ddTimeFrame");
+                $ddTimeframe.empty();
+                $.each(vals, function(index, value) {
+                    var props = value.split("|");
+                    var strOpt = "<option value='" + props[0] + "' ";
+                    if (props.length>2) {
+                        strOpt += "selected='selected'";
+                    }
+                    strOpt += ">" + props[1] + "</option>"
+                    $ddTimeframe.append(strOpt)
+                });
             });
 
             function terminate(){
@@ -83,10 +122,11 @@
                 var message = {
                     command: "start",
                     symbol: document.getElementById('fStock').value,
+                    dataSource : document.getElementById('ddDataSource').value,
                     timeFrame: document.getElementById('ddTimeFrame').value,
                     startDate: document.getElementById('fStartDate').value,
                     endDate: document.getElementById('fEndDate').value,
-                    isAggresive : document.getElementById("chkAggresive").checked
+                    // isAggresive : document.getElementById("chkAggresive").checked
                     // opts: {
                     //     back_limit: parseInt(document.getElementById('fLimit').value),
                     //     fractal_fast_factor: parseFloat(document.getElementById('fFastFactor').value),
@@ -168,11 +208,11 @@
 
             function showAlert(resp){
                 var signal;
-                if (document.getElementById("chkAggresive").checked) {
-                    signal = resp.signal_aggresive;
-                } else {
-                    signal = resp.signal;
-                }
+                // if (document.getElementById("chkAggresive").checked) {
+                //     signal = resp.signal_aggresive;
+                // } else {
+                signal = resp.signal;
+                // }
                 if (signal.hasOwnProperty('signal')){
                     var alertEl = "<div class='alert alert-info alert-dismissible fade show' role='alert'><strong>";
                     alertEl += signal.signal + "!</strong> ";
