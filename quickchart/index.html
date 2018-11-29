@@ -1,35 +1,119 @@
 <html>
     <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
         <title>Quick Chart : A minimal stock chart and zones displayer</title>
+        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
+        <link href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
+
         <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
         <script src="chartjs/jquery-3.3.1.min.js"></script>
+        <script src="chartjs/moment.js"></script>
+        <script src="chartjs/moment-timezone-with-data.min.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/gasparesganga-jquery-loading-overlay@2.1.5/dist/loadingoverlay.min.js"></script>
+
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy" crossorigin="anonymous"></script>
+
+        <link rel="stylesheet" href="chartjs/bootstrap-datetimepicker.min.css">
+        <script src="chartjs/bootstrap-datetimepicker.min.js"></script>
+
+        <script>
+            var ddTimeFrameItems = {
+                "alphaVantage" : "30min|30 Menit|selected,60min|1 jam,daily|Harian",
+                "direct" : "30min|30 Menit|selected,60min|1 jam"
+            }
+        </script>
     </head>
     <body>
         <!-- Plotly chart will be drawn inside this div -->
         <label for="fStock">Stock Code : </label>
-        <input type="text" id="fStock" name="fStock" placeholder="e.g BBCA.JK">
+        <input type="text" id="fStock" name="fStock" placeholder="e.g BBCA"><br>
+        <label for="ddDataSource">Data Source: </label>
+        <select name="ddDataSource" id="ddDataSource">
+            <option value="1" selected="selected">Alpha Vantage</option>
+            <option value="2">Direct</option>
+        </select><br>
+        <label for="ddTimeFrame">Time Frame : </label>
+        <select name="ddTimeFrame" id="ddTimeFrame">
+            <!-- <option value="1min">1 Menit</option>
+            <option value="5min">5 Menit</option>
+            <option value="15min">15 Menit</option> -->
+            <option value="30min" selected="selected">30 Menit</option>
+            <option value="60min">1 Jam</option>
+            <option value="daily">Harian</option>
+            <!-- <option value="weekly">Mingguan</option>
+            <option value="monthly">Bulanan</option> -->
+        </select><br>
+        <div class="row">
+            <div class='col-sm-2'>
+                <input type='text' class="form-control" id='dtpEndDateTime' />
+            </div>
+            <script type="text/javascript">
+                $(function () {
+                    $('#dtpEndDateTime').datetimepicker({
+                        "format": "Y-MM-DD HH:mm",
+                        "showTodayButton": true,
+                        "timeZone": "Asia/Jakarta"
+                    });
+                });
+            </script>
+        </div>
+        <input type="checkbox" name="chkMerge" id="chkMerge" checked> <label for="chkMerge">Merge Zone</label><br>
         <input type="button" id="btnSubmit" name="btnSubmit" value="Retrieve" onclick="loadData()">
         <div id="plotly-div"></div>
         <script>
             var latestXdata;
+
+            $("#ddDataSource").change(function(){
+                var $ddDatasource = $(this);
+                var key = $ddDatasource.val();
+                vals = [];
+                switch (key) {
+                    case "1":
+                        vals = ddTimeFrameItems.alphaVantage.split(",");
+                        break;
+                    case "2":
+                        vals = ddTimeFrameItems.direct.split(",");
+                    default:
+                        break;
+                }
+
+                var $ddTimeframe = $("#ddTimeFrame");
+                $ddTimeframe.empty();
+                $.each(vals, function(index, value) {
+                    var props = value.split("|");
+                    var strOpt = "<option value='" + props[0] + "' ";
+                    if (props.length>2) {
+                        strOpt += "selected='selected'";
+                    }
+                    strOpt += ">" + props[1] + "</option>"
+                    $ddTimeframe.append(strOpt)
+                });
+            });
+
             function loadData() {
                 var stockCode = document.getElementById('fStock').value;
                 if (stockCode == '') {
                     alert('Masukan kode saham!');
                     return false;
                 };
+                $(document).ajaxError(function(event, jqxhr, settings, thrownError){
+                    alert("error!");
+                    $.LoadingOverlay("hide")
+                });
+                var selectedDateVal = $("#dtpEndDateTime").data("DateTimePicker").viewDate().toISOString(true);
+                // alert(selectedDateVal);
+                // return;
                 $.LoadingOverlay("show")
-                //var hostUrl = "http://127.0.0.1:8000/";
+                var hostUrl = "http://127.0.0.1:8000/";
                 var hostUrl = "https://agi-snr-api-proto.herokuapp.com/";
                 var baseUrl = hostUrl + "indicator/";
-                $.ajax(baseUrl + stockCode + "/", {
-                    success : drawChart,
-                    error : function(jqXHR, textStatus, errorThrown) {
-                        $.LoadingOverlay("hide");
-                        alert("Error! " + textStatus + " : " + errorThrown);
-                    }
-                })
+                $.post(baseUrl + stockCode + "/", {
+                    "data_source": document.getElementById("ddDataSource").value,
+                    "time_frame" : document.getElementById("ddTimeFrame").value,
+                    "end_datetime" : selectedDateVal,
+                    "merge": document.getElementById("chkMerge").checked,
+                },drawChart)
             }
 
             function drawChart(resp, textStatus, jqXHR) {
@@ -42,9 +126,9 @@
                     dragmode: 'pan',
                     showlegend: false,
                     margin: {
-                        r: 10, 
-                        t: 25, 
-                        b: 40, 
+                        r: 10,
+                        t: 25,
+                        b: 40,
                         l: 60
                     },
                     height: 550,
@@ -127,7 +211,7 @@
                         x0: value.start,
                         y0: value.low,
                         x1: latestXdata,
-                        y1: value.hi,
+                        y1: value.high,
                         fillcolor: createZoneColor(value),
                         line: {
                             width: 0
@@ -149,13 +233,13 @@
                         align: 'left',
                         showarrow: false,
                         x: latestXdata,
-                        y: ((value.hi + value.low) / 2),
+                        y: ((value.high + value.low) / 2),
                         xref : 'x',
                         yref : 'y',
                         xanchor: 'left',
                         xshift: 5,
                         yshift: 0,
-                        hovertext : 'high : ' + value.hi.toFixed(4) + ', low : ' + value.low.toFixed(4)
+                        hovertext : 'high : ' + value.high.toFixed(4) + ', low : ' + value.low.toFixed(4)
                     };
                     labels.push(label);
                 });
@@ -263,7 +347,7 @@
                     }
                 }
                 label += ' ('+ value.start +') : ';
-                label += 'high ' + value.hi.toFixed(4) +', ';
+                label += 'high ' + value.high.toFixed(4) +', ';
                 label += 'low ' + value.low.toFixed(4);
                 if (value.hits > 0 && value.strength > 2)
                     label += ', retests=' + value.hits.toString();
@@ -272,5 +356,4 @@
         </script>
     </body>
 </html>
-    
-    
+
