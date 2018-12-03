@@ -26,7 +26,7 @@
         <select name="ddDataSource" id="ddDataSource">
             <option value="1" selected="selected">Alpha Vantage</option>
             <option value="2">Direct</option>
-        </select><br>
+        </select>
         <label for="ddTimeFrame">Time Frame : </label>
         <select name="ddTimeFrame" id="ddTimeFrame">
             <!-- <option value="1min">1 Menit</option>
@@ -37,7 +37,9 @@
             <option value="daily">Harian</option>
             <!-- <option value="weekly">Mingguan</option>
             <option value="monthly">Bulanan</option> -->
-        </select><br>
+        </select>
+        <input type="checkbox" name="chkMerge" id="chkMerge" checked> <label for="chkMerge">Merge Zone</label>
+        <input type="checkbox" name="chkMergeExtra" id="chkMergeExtra" checked> <label for="chkMergeExtra">Merge Zone (Extra)</label><br>
         <label for="fStartDate">Start : </label><input type="date" name="fStartDate" id="fStartDate" required value="2018-08-01">&nbsp;
         <label for="fEndDate">End : </label><input type="date" name="fEndDate" id="fEndDate" required value="2018-08-31"><br>
         <!-- <input type="checkbox" id="chkAggresive" name="chkAggresive" value="Aggresive Mode"> Aggresive Mode<br> -->
@@ -45,6 +47,7 @@
         <label for="fLimit">Back limit : </label><input type="text" name="fLimit" id="fLimit" value="1000"><br>
         <label for="fFastFactor">Fractal Fast Factor : </label><input type="text" name="fFastFactor" id="fFastFactor" value="3.0"><br>
         <label for="fSlowFactor">Fractal Slow Factor : </label><input type="text" name="fSlowFactor" id="fSlowFactor" value="6.0"><br> -->
+        <input type="checkbox" name="chkPause" id="chkPause" checked> <label for="chkPause">Pause on Signal</label><br>
         <input type="button" id="btnSubmit" name="btnSubmit" value="Retrieve" onclick="loadData();">
         <input type="button" id="btnStop" value="Stop" onClick="terminate();">
         <input type="button" id="btnPause" value="Pause" onClick="pause();" hidden>
@@ -59,6 +62,7 @@
             var lowY;
             var wSocket;
             var firstLoad = true;
+            var isPauseOnSignal = true;
 
             $(document).ready(function(){
                 document.getElementById("fStartDate").setAttribute('max', moment().format(moment().format(moment.HTML5_FMT.DATE)));
@@ -119,6 +123,7 @@
 
             function socketOpen(event){
                 //$.LoadingOverlay("show");
+                isPauseOnSignal = document.getElementById('chkPause').checked;
                 var message = {
                     command: "start",
                     symbol: document.getElementById('fStock').value,
@@ -126,12 +131,15 @@
                     timeFrame: document.getElementById('ddTimeFrame').value,
                     startDate: document.getElementById('fStartDate').value,
                     endDate: document.getElementById('fEndDate').value,
+                    isPause : isPauseOnSignal,
                     // isAggresive : document.getElementById("chkAggresive").checked
-                    // opts: {
-                    //     back_limit: parseInt(document.getElementById('fLimit').value),
-                    //     fractal_fast_factor: parseFloat(document.getElementById('fFastFactor').value),
-                    //     fractal_slow_factor: parseFloat(document.getElementById('fSlowFactor').value)
-                    // }
+                    opts: {
+                        // back_limit: parseInt(document.getElementById('fLimit').value),
+                        // fractal_fast_factor: parseFloat(document.getElementById('fFastFactor').value),
+                        // fractal_slow_factor: parseFloat(document.getElementById('fSlowFactor').value)
+                        zone_merge: document.getElementById('chkMerge').checked,
+                        zone_extra_merge: document.getElementById('chkMergeExtra').checked
+                    }
                 };
                 wSocket.send(JSON.stringify(message));
             }
@@ -143,7 +151,7 @@
                         console.log("Task Id : " + msg.taskId);
                         document.getElementById("fTaskId").value = msg.taskId;
                         alert("Koneksi dengan server berhasil!");
-                        document.getElementById("chkAggresive").setAttribute('disabled','disabled');
+                        //document.getElementById("chkAggresive").setAttribute('disabled','disabled');
                         document.getElementById('btnPause').removeAttribute('hidden');
                         break;
                     case "update":
@@ -151,7 +159,7 @@
                         showAlert(msg.data);
                         break;
                     case "finished":
-                        document.getElementById("chkAggresive").removeAttribute('disabled');
+                        //document.getElementById("chkAggresive").removeAttribute('disabled');
                         document.getElementById('btnPause').setAttribute('hidden','hidden');
                         document.getElementById('btnContinue').setAttribute('hidden','hidden');
                         alert("Backtest selesai.");
@@ -159,7 +167,7 @@
                         break;
                     case "stopOk":
                         wSocket.close();
-                        document.getElementById("chkAggresive").removeAttribute('disabled');
+                        //document.getElementById("chkAggresive").removeAttribute('disabled');
                         document.getElementById('btnPause').setAttribute('hidden','hidden');
                         document.getElementById('btnContinue').setAttribute('hidden','hidden');
                         break;
@@ -216,6 +224,9 @@
                 if (signal.hasOwnProperty('signal')){
                     var alertEl = "<div class='alert alert-info alert-dismissible fade show' role='alert'><strong>";
                     alertEl += signal.signal + "!</strong> ";
+                    if (signal.hasOwnProperty('buy_range')) {
+                        alertEl += "Buy Range : " + signal.buy_range + ", ";
+                    }
                     alertEl += "Take Profit : " + signal.take_profit;
                     if (signal.hasOwnProperty('stop_loss')) {
                         alertEl += ", Stop Loss : " + signal.stop_loss;
@@ -226,6 +237,9 @@
                     $("#alert-div").html(alertEl);
                     document.getElementById('btnPause').setAttribute('hidden','hidden');
                     document.getElementById('btnContinue').removeAttribute('hidden');
+                }
+                else {
+                    $("#alert-div").empty();
                 }
             }
 
