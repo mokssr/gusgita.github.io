@@ -43,7 +43,10 @@
             <option value="daily">Harian</option>
             <!-- <option value="weekly">Mingguan</option>
             <option value="monthly">Bulanan</option> -->
-        </select><br>
+        </select>
+        <input type="checkbox" name="chkMerge" id="chkMerge" checked> <label for="chkMerge">Merge Zone</label>
+        <input type="checkbox" name="chkMergeExtra" id="chkMergeExtra" checked> <label for="chkMergeExtra">Merge Zone (Extra)</label><br>
+        <br>
         <div class="row">
             <div class='col-sm-2'>
                 <input type='text' class="form-control" id='dtpEndDateTime' />
@@ -58,7 +61,6 @@
                 });
             </script>
         </div>
-        <input type="checkbox" name="chkMerge" id="chkMerge" checked> <label for="chkMerge">Merge Zone</label><br>
         <input type="button" id="btnSubmit" name="btnSubmit" value="Retrieve" onclick="loadData()">
         <div id="plotly-div"></div>
         <script>
@@ -97,10 +99,6 @@
                     alert('Masukan kode saham!');
                     return false;
                 };
-                $(document).ajaxError(function(event, jqxhr, settings, thrownError){
-                    alert("error!");
-                    $.LoadingOverlay("hide")
-                });
                 var selectedDateVal = $("#dtpEndDateTime").data("DateTimePicker").viewDate().toISOString(true);
                 // alert(selectedDateVal);
                 // return;
@@ -113,7 +111,13 @@
                     "time_frame" : document.getElementById("ddTimeFrame").value,
                     "end_datetime" : selectedDateVal,
                     "merge": document.getElementById("chkMerge").checked,
-                },drawChart)
+                    "merge_extra": document.getElementById("chkMergeExtra").checked
+                })
+                .done(drawChart)
+                .fail(function(event, jqxhr, settings, thrownError){
+                    alert("error!");
+                    $.LoadingOverlay("hide")
+                });
             }
 
             function drawChart(resp, textStatus, jqXHR) {
